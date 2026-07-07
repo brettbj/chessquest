@@ -1,0 +1,469 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover, user-scalable=no">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="ChessQuest">
+<meta name="theme-color" content="#191722">
+<link rel="manifest" href="manifest.webmanifest">
+<link rel="apple-touch-icon" href="assets/icon-180.png">
+<link rel="icon" href="assets/icon-192.png">
+<title>ChessQuest — Train. Play. Level up.</title>
+<link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+<div id="app">
+
+  <!-- ======== top bar ======== -->
+  <header id="topbar">
+    <button class="brand" id="btn-profile"><span id="profile-emoji">🦉</span> ChessQuest</button>
+    <div class="player-chips">
+      <div class="chip" id="chip-level" title="Level & XP">
+        <span class="chip-icon">⭐</span><span id="level-num">1</span>
+        <div class="xp-bar"><div class="xp-fill" id="xp-fill"></div></div>
+      </div>
+      <div class="chip" id="chip-streak" title="Daily streak">
+        <span class="chip-icon">🔥</span><span id="streak-num">0</span><span id="freeze-pips"></span>
+      </div>
+      <div class="chip" id="chip-puzzle-elo" title="Puzzle rating">
+        <span class="chip-icon">🧩</span><span id="puzzle-elo-num">800</span>
+      </div>
+      <div class="chip" id="chip-game-elo" title="Game rating">
+        <span class="chip-icon">⚔️</span><span id="game-elo-num">800</span>
+      </div>
+      <button class="chip chip-btn" id="btn-sound" title="Toggle sound">🔊</button>
+      <button class="chip chip-btn" id="btn-settings" title="Settings">⚙️</button>
+    </div>
+  </header>
+
+  <!-- ======== main views ======== -->
+  <main id="views">
+
+    <!-- ---- HOME ---- -->
+    <section class="view active" id="view-home">
+      <div class="home-grid">
+        <div class="card hero-card">
+          <div class="hero-head">
+            <h1 id="greeting">Ready to train?</h1>
+            <span class="level-title-tag" id="level-title"></span>
+          </div>
+          <p id="daily-summary" class="muted"></p>
+          <div id="today-plan"></div>
+          <div class="quests" id="quests"></div>
+        </div>
+        <div class="card stat-card" data-goto="puzzles">
+          <div class="stat-icon">🧩</div>
+          <h3>Puzzles</h3>
+          <p class="stat-big" id="home-puzzle-elo">800</p>
+          <p class="muted" id="home-puzzle-sub">Rated tactics</p>
+        </div>
+        <div class="card stat-card" data-goto="play">
+          <div class="stat-icon">🤖</div>
+          <h3>Play Bots</h3>
+          <p class="stat-big" id="home-game-elo">800</p>
+          <p class="muted" id="home-game-sub">16 bots + Coach</p>
+        </div>
+        <div class="card stat-card" data-goto="trainer">
+          <div class="stat-icon">🎓</div>
+          <h3>Trainer</h3>
+          <div class="ring-wrap"><svg viewBox="0 0 60 60" class="ring"><circle class="ring-track" cx="30" cy="30" r="26"/><circle class="ring-fill" id="trainer-ring" cx="30" cy="30" r="26"/></svg><p class="stat-big" id="home-modules">0</p></div>
+          <p class="muted" id="home-modules-sub">modules completed</p>
+        </div>
+        <div class="card stat-card" data-goto="review">
+          <div class="stat-icon">🔍</div>
+          <h3>Game Review</h3>
+          <p class="stat-big" id="home-reviews">0</p>
+          <p class="muted">games reviewed</p>
+        </div>
+        <div class="card" id="recap-card" hidden></div>
+        <div class="card achievements-card">
+          <h3>🏆 Achievements <span class="muted" id="ach-count"></span>
+            <button class="btn mini" id="btn-ach-gallery">See all</button>
+            <button class="btn mini" id="btn-stats">📊 Stats</button>
+            <button class="btn mini" id="btn-share">📤 Share</button>
+          </h3>
+          <div id="achievements-strip"></div>
+        </div>
+        <div class="tip-ticker card" id="tip-ticker"><span class="tip-icon">💡</span><span id="tip-text"></span></div>
+      </div>
+    </section>
+
+    <!-- ---- PUZZLES ---- -->
+    <section class="view" id="view-puzzles">
+      <div class="mode-tabs" id="puzzle-mode-tabs">
+        <button class="ttab active" data-pmode="rated">🧩 Rated</button>
+        <button class="ttab" data-pmode="rush">🌀 Rush</button>
+        <button class="ttab" data-pmode="daily">📅 Daily</button>
+        <button class="ttab" data-pmode="practice">🎛 Practice</button>
+        <button class="ttab" data-pmode="redo">🔁 Redo <span class="badge" id="redo-badge" hidden></span></button>
+      </div>
+      <div class="game-layout">
+        <div class="board-pane">
+          <div class="board-header">
+            <div id="puzzle-prompt" class="turn-banner">Your move</div>
+            <div class="header-right">
+              <span id="puzzle-timer" class="timer" hidden>0:00</span>
+              <span id="rush-hud" class="rush-hud" hidden><span id="rush-score">0</span> <span id="rush-lives">❤️❤️❤️</span></span>
+              <div id="puzzle-streak-pips" class="streak-pips"></div>
+            </div>
+          </div>
+          <div id="puzzle-board" class="board-host"></div>
+          <div class="board-footer">
+            <button class="btn" id="btn-puzzle-hint">💡 Hint</button>
+            <button class="btn" id="btn-puzzle-skip">⏭ Skip</button>
+            <button class="btn primary" id="btn-puzzle-next" hidden>Next puzzle →</button>
+          </div>
+        </div>
+        <div class="side-pane">
+          <div class="card" id="puzzle-info-card">
+            <h3 id="puzzle-mode-title">🧩 Rated Puzzles</h3>
+            <div id="practice-theme-row" hidden>
+              <select id="practice-theme"></select>
+            </div>
+            <div class="elo-row"><span>Your rating</span><b id="puzzle-elo-side">800</b></div>
+            <div class="elo-row"><span>Puzzle rating</span><b id="puzzle-target-elo">?</b></div>
+            <div class="elo-row"><span>At stake</span><b id="puzzle-stakes">—</b></div>
+            <div class="elo-row"><span>Streak</span><b id="puzzle-streak">0</b></div>
+            <div id="puzzle-delta" class="delta-banner" hidden></div>
+            <div id="puzzle-themes" class="theme-tags"></div>
+          </div>
+          <div class="card">
+            <h3>📈 Progress</h3>
+            <canvas id="puzzle-chart" width="300" height="120"></canvas>
+            <p class="muted" id="puzzle-stats-line"></p>
+          </div>
+          <div class="card" id="puzzle-history-card">
+            <h3>🕘 Recent</h3>
+            <div id="puzzle-history" class="history-list"></div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- ---- PLAY ---- -->
+    <section class="view" id="view-play">
+      <div id="bot-select">
+        <h2>Choose your opponent</h2>
+        <div class="bot-grid" id="bot-grid"></div>
+      </div>
+      <div id="color-select" class="modal-scrim" hidden>
+        <div class="modal">
+          <h3 id="color-select-title">Play as…</h3>
+          <div class="color-row">
+            <button class="btn color-btn" data-color="w">⚪ White</button>
+            <button class="btn color-btn" data-color="random">🎲 Random</button>
+            <button class="btn color-btn" data-color="b">⚫ Black</button>
+          </div>
+          <button class="btn mini" id="btn-color-cancel">Cancel</button>
+        </div>
+      </div>
+      <div id="game-area" hidden>
+        <div class="game-layout">
+          <div class="board-pane">
+            <div class="board-header">
+              <div class="bot-plate"><span id="game-bot-face">🤖</span>
+                <div><b id="game-bot-name">Bot</b><span class="muted" id="game-bot-elo"></span></div>
+                <span id="game-bot-thinking" class="thinking" hidden>thinking…</span>
+              </div>
+              <div class="header-right">
+                <span id="game-opening" class="opening-label"></span>
+                <span id="game-clock" class="timer">0:00</span>
+              </div>
+            </div>
+            <div id="bot-chat" class="chat-bubble" hidden></div>
+            <div id="tray-top" class="material-tray"></div>
+            <div class="eval-wrap">
+              <div class="eval-bar" id="game-eval-wrap" hidden><div id="game-eval-fill" class="eval-fill"></div></div>
+              <div id="game-board" class="board-host"></div>
+            </div>
+            <div id="tray-bottom" class="material-tray"></div>
+            <div class="board-header">
+              <div class="bot-plate"><span id="you-emoji">🫵</span>
+                <div><b id="you-name">You</b><span class="muted" id="game-you-elo"></span></div>
+              </div>
+              <div id="game-status" class="turn-banner">Your move</div>
+            </div>
+            <div class="board-footer">
+              <button class="btn" id="btn-game-takeback">↩️ <span id="takeback-count">3</span></button>
+              <button class="btn" id="btn-game-hint">💡 <span id="gamehint-count">3</span></button>
+              <button class="btn" id="btn-game-draw">🤝</button>
+              <button class="btn" id="btn-game-resign">🏳</button>
+              <button class="btn" id="btn-game-new">↩ Bots</button>
+              <button class="btn" id="btn-game-rematch" hidden>⚔️ Rematch</button>
+              <button class="btn primary" id="btn-game-review" hidden>🔍 Review</button>
+            </div>
+          </div>
+          <div class="side-pane">
+            <div class="card">
+              <h3>Moves <button class="btn mini" id="btn-game-pgn" hidden>📋 PGN</button></h3>
+              <div id="game-moves" class="move-list"></div>
+            </div>
+            <div id="mystery-guess-card" class="card" hidden>
+              <h3>🎭 Guess the rating</h3>
+              <p class="muted">Within 200 points earns +60 XP.</p>
+              <div class="guess-row">
+                <input type="range" id="mystery-slider" min="400" max="2400" step="50" value="1200">
+                <b id="mystery-guess-val">1200</b>
+                <button class="btn primary" id="btn-mystery-guess">Guess</button>
+              </div>
+            </div>
+            <div id="game-result-card" class="card result-card" hidden></div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- ---- TRAINER ---- -->
+    <section class="view" id="view-trainer">
+      <div id="trainer-browser">
+        <h2>🎓 Trainer <span class="muted" id="trainer-progress-label"></span></h2>
+        <div class="trainer-toolbar">
+          <input type="search" id="module-search" placeholder="Search modules…">
+          <select id="module-sort">
+            <option value="default">Sort: default</option>
+            <option value="name">Name</option>
+            <option value="difficulty">Difficulty</option>
+            <option value="incomplete">Incomplete first</option>
+          </select>
+        </div>
+        <div id="workout-banner" class="card workout-banner">
+          <div><b>🏋️ Daily Workout</b><span class="muted" id="workout-sub"> — your personalized daily session</span></div>
+          <button class="btn primary" id="btn-workout">Start</button>
+        </div>
+        <div id="recommended-row" hidden>
+          <h3>🎯 Recommended for you</h3>
+          <div id="recommended-grid" class="module-grid"></div>
+        </div>
+        <div class="trainer-tabs" id="trainer-tabs">
+          <button class="ttab active" data-cat="openings">Openings</button>
+          <button class="ttab" data-cat="tactics">Tactics</button>
+          <button class="ttab" data-cat="checkmates">Checkmates</button>
+          <button class="ttab" data-cat="endgames">Endgames</button>
+          <button class="ttab" data-cat="drills">Drills</button>
+        </div>
+        <div id="module-grid" class="module-grid"></div>
+      </div>
+      <div id="module-area" hidden>
+        <div class="game-layout">
+          <div class="board-pane">
+            <div class="board-header">
+              <div id="module-title" class="turn-banner">Module</div>
+              <div id="module-progress" class="streak-pips"></div>
+            </div>
+            <div id="module-board" class="board-host"></div>
+            <div class="board-footer">
+              <button class="btn" id="btn-module-exit">← Back</button>
+              <button class="btn" id="btn-module-hint">💡 Hint</button>
+              <button class="btn primary" id="btn-module-next" hidden>Continue →</button>
+            </div>
+          </div>
+          <div class="side-pane">
+            <div class="card">
+              <h3 id="module-side-title"></h3>
+              <p id="module-instruction" class="instruction"></p>
+              <div id="module-line" class="move-list"></div>
+            </div>
+            <div class="card" id="module-plan-card" hidden>
+              <h3>📋 The plan</h3>
+              <p id="module-plan" class="muted"></p>
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- ---- REVIEW ---- -->
+    <section class="view" id="view-review">
+      <div id="review-list-area">
+        <h2>🔍 Game Review</h2>
+        <p class="muted">Every game you play against a bot lands here for a full move-by-move coaching session.</p>
+        <div id="review-list" class="review-list"></div>
+      </div>
+      <div id="review-area" hidden>
+        <div class="game-layout">
+          <div class="board-pane">
+            <div class="eval-wrap">
+              <div class="eval-bar"><div id="eval-fill" class="eval-fill"></div><span id="eval-num" class="eval-num"></span></div>
+              <div id="review-board" class="board-host"></div>
+            </div>
+            <div id="key-moments" class="key-moments"></div>
+            <div class="board-footer review-nav">
+              <button class="btn" id="btn-review-exit">←</button>
+              <button class="btn" id="btn-review-first">⏮</button>
+              <button class="btn" id="btn-review-prev">◀</button>
+              <button class="btn" id="btn-review-next">▶</button>
+              <button class="btn" id="btn-review-last">⏭</button>
+              <button class="btn" id="btn-review-flip">🔄</button>
+              <button class="btn" id="btn-review-best" hidden>👁 Best</button>
+              <button class="btn" id="btn-review-pv" hidden>▶️ Line</button>
+              <button class="btn" id="btn-review-retry" hidden>🎮 Retry</button>
+            </div>
+          </div>
+          <div class="side-pane">
+            <div class="card" id="review-summary-card">
+              <h3 id="review-summary-title">Analysing…</h3>
+              <div id="review-progressbar" class="progressbar"><div></div></div>
+              <div id="review-accuracy" class="accuracy-row" hidden></div>
+              <canvas id="acc-spark" width="300" height="60" hidden></canvas>
+              <div id="phase-breakdown" class="phase-breakdown"></div>
+              <div id="review-counts" class="counts-grid"></div>
+              <button class="btn mini" id="btn-review-export" hidden>📋 Copy annotated game</button>
+            </div>
+            <div class="card">
+              <div id="review-move-label" class="review-move-label"></div>
+              <p id="review-comment" class="coach-bubble">Pick a move to hear what your coach thinks.</p>
+              <div id="review-alts" class="review-alts"></div>
+            </div>
+            <div class="card">
+              <h3>Moves</h3>
+              <div id="review-moves" class="move-list clickable"></div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+  </main>
+
+  <!-- ======== bottom nav ======== -->
+  <nav id="tabbar">
+    <button class="tab active" data-view="home"><span>🏠</span>Home</button>
+    <button class="tab" data-view="puzzles"><span>🧩</span>Puzzles</button>
+    <button class="tab" data-view="play"><span>🤖</span>Play</button>
+    <button class="tab" data-view="trainer"><span>🎓</span>Trainer</button>
+    <button class="tab" data-view="review"><span>🔍</span>Review</button>
+  </nav>
+
+  <!-- ======== overlays ======== -->
+  <div id="toast-host"></div>
+  <div id="confetti-host"></div>
+
+  <!-- settings modal -->
+  <div id="settings-modal" class="modal-scrim" hidden>
+    <div class="modal settings-modal">
+      <h3>⚙️ Settings <button class="btn mini modal-close" data-close="settings-modal">✕</button></h3>
+      <div class="setting-group"><h4>Feel</h4>
+        <label class="setting-row">Board theme
+          <select id="set-boardTheme">
+            <option value="purple">Classic Purple</option>
+            <option value="green">Tournament Green</option>
+            <option value="walnut">Walnut</option>
+            <option value="ice">Ice</option>
+          </select></label>
+        <label class="setting-row">Sound pack
+          <select id="set-soundPack">
+            <option value="classic">Classic</option>
+            <option value="arcade">Arcade</option>
+            <option value="zen">Zen</option>
+          </select></label>
+        <label class="setting-row">Volume <input type="range" id="set-volume" min="0" max="1" step="0.1"></label>
+        <label class="setting-row">Haptics <input type="checkbox" id="set-haptics"></label>
+        <label class="setting-row">Animations <input type="checkbox" id="set-animations"></label>
+        <label class="setting-row">OLED black <input type="checkbox" id="set-oled"></label>
+      </div>
+      <div class="setting-group"><h4>Board</h4>
+        <label class="setting-row">Legal move dots <input type="checkbox" id="set-showDots"></label>
+        <label class="setting-row">Coordinates <input type="checkbox" id="set-showCoords"></label>
+      </div>
+      <div class="setting-group"><h4>Training</h4>
+        <label class="setting-row">Auto-next puzzle <input type="checkbox" id="set-autoNext"></label>
+        <label class="setting-row">Tutor warnings (games) <input type="checkbox" id="set-tutorMode"></label>
+        <label class="setting-row">Eval bar in games <input type="checkbox" id="set-evalBar"></label>
+        <label class="setting-row">Coach tone
+          <select id="set-tonePack">
+            <option value="warm">Encouraging</option>
+            <option value="dry">Dry</option>
+            <option value="savage">Savage</option>
+          </select></label>
+        <label class="setting-row">Review depth
+          <select id="set-reviewDepth">
+            <option value="fast">Fast</option>
+            <option value="deep">Deep</option>
+          </select></label>
+      </div>
+      <div class="setting-group"><h4>Profile & data</h4>
+        <label class="setting-row">Name <input type="text" id="set-name" maxlength="16"></label>
+        <label class="setting-row">Avatar <div id="avatar-row" class="avatar-row"></div></label>
+        <div class="setting-row">
+          <button class="btn" id="btn-export-save">⬇️ Export save</button>
+          <button class="btn" id="btn-import-save">⬆️ Import save</button>
+          <input type="file" id="import-file" accept=".json" hidden>
+        </div>
+        <div class="setting-row"><button class="btn danger" id="btn-reset">🗑 Reset all progress</button></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- achievements gallery -->
+  <div id="ach-modal" class="modal-scrim" hidden>
+    <div class="modal">
+      <h3>🏆 Achievements <span class="muted" id="ach-modal-count"></span> <button class="btn mini modal-close" data-close="ach-modal">✕</button></h3>
+      <div id="ach-gallery" class="ach-gallery"></div>
+    </div>
+  </div>
+
+  <!-- stats -->
+  <div id="stats-modal" class="modal-scrim" hidden>
+    <div class="modal">
+      <h3>📊 Lifetime stats <button class="btn mini modal-close" data-close="stats-modal">✕</button></h3>
+      <div id="stats-grid" class="stats-grid"></div>
+    </div>
+  </div>
+
+  <!-- share card -->
+  <div id="share-modal" class="modal-scrim" hidden>
+    <div class="modal">
+      <h3>📤 Share your progress <button class="btn mini modal-close" data-close="share-modal">✕</button></h3>
+      <canvas id="share-canvas" width="600" height="340"></canvas>
+      <div class="setting-row">
+        <button class="btn primary" id="btn-share-download">⬇️ Save image</button>
+        <button class="btn" id="btn-share-native" hidden>📤 Share</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- wisdom card -->
+  <div id="wisdom-modal" class="modal-scrim" hidden>
+    <div class="modal wisdom-modal">
+      <div class="wisdom-icon" id="wisdom-icon">♟️</div>
+      <h3 id="wisdom-title"></h3>
+      <p id="wisdom-text"></p>
+      <button class="btn primary modal-close" data-close="wisdom-modal">Nice</button>
+    </div>
+  </div>
+
+  <!-- mate pattern explainer -->
+  <div id="pattern-modal" class="modal-scrim" hidden>
+    <div class="modal">
+      <h3 id="pattern-title"></h3>
+      <p id="pattern-anatomy"></p>
+      <p class="muted" id="pattern-recognize"></p>
+      <button class="btn primary modal-close" data-close="pattern-modal">Got it — let's go</button>
+    </div>
+  </div>
+
+  <!-- onboarding -->
+  <div id="onboard-modal" class="modal-scrim" hidden>
+    <div class="modal onboard-modal">
+      <div id="onboard-step-1">
+        <h2>♞ Welcome to ChessQuest</h2>
+        <p>Rated puzzles, a ladder of bots, 300+ training modules and a coach who reviews every game you play.</p>
+        <label class="setting-row">What should we call you? <input type="text" id="onboard-name" maxlength="16" placeholder="Player"></label>
+        <div id="onboard-avatars" class="avatar-row big"></div>
+        <button class="btn primary" id="btn-onboard-next">Continue →</button>
+      </div>
+      <div id="onboard-step-2" hidden>
+        <h2>📏 Quick calibration</h2>
+        <p>Solve (or attempt) 3 puzzles so we can find your level. No pressure — misses are information.</p>
+        <button class="btn primary" id="btn-onboard-calibrate">Start calibration</button>
+        <button class="btn mini" id="btn-onboard-skip">Skip — start me at 800</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script type="module" src="js/app.js"></script>
+</body>
+</html>

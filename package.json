@@ -1,0 +1,13 @@
+{
+  "name": "chessquest",
+  "version": "1.0.0",
+  "type": "module",
+  "private": true,
+  "devDependencies": {
+    "playwright-core": "^1.61.1"
+  },
+  "scripts": {
+    "start": "node serve.mjs",
+    "test": "node tests/smoke.mjs"
+  }
+}
