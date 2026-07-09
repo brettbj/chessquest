@@ -43,6 +43,15 @@ export function matchOpening(sans) {
   return { name: named.op.name, eco: named.op.eco, len: bestAny.n, full: !!bestFull };
 }
 
+// Performance rating from average centipawn loss — log fit anchored at
+// (25 ACPL ≈ 2350) and (150 ACPL ≈ 1200), clamped and rounded to 25.
+export function perfElo(cplSum, n) {
+  if (n < 6) return null;
+  const acpl = Math.max(5, cplSum / n);
+  const elo = 2350 - 642 * Math.log(acpl / 25);
+  return Math.round(Math.max(400, Math.min(3000, elo)) / 25) * 25;
+}
+
 // Format a white-perspective score as '+1.4' / '−0.6' / 'M3' / '−M2'.
 export function fmtEval(cp) {
   if (cp > MATE - 1000) return "M" + Math.max(1, Math.ceil((MATE - cp) / 2));
@@ -145,6 +154,7 @@ export const reviewMode = {
     $("phase-breakdown").innerHTML = "";
     $("review-alts").innerHTML = "";
     $("btn-review-export").hidden = true;
+    $("review-perf").hidden = true;
     $("eval-num").textContent = "";
 
     this.renderMoveList();
@@ -316,6 +326,7 @@ export const reviewMode = {
     const counts = { brilliant: 0, great: 0, best: 0, good: 0, book: 0, inaccuracy: 0, mistake: 0, blunder: 0, miss: 0 };
     let accSum = 0, accN = 0, botAccSum = 0, botAccN = 0;
     let bestStreak = 0, cur = 0;
+    let cplSum = 0, botCplSum = 0;
     const phaseLoss = { opening: 0, middlegame: 0, endgame: 0 };
     this.classified.forEach((c, i) => {
       if (!c) return;
@@ -323,10 +334,11 @@ export const reviewMode = {
       if (isPlayer) {
         counts[c.cls]++;
         accSum += c.acc; accN++;
+        cplSum += c.cpLoss;
         phaseLoss[c.phase] += c.cpLoss;
         if (["best", "great", "brilliant", "good", "book"].includes(c.cls)) { cur++; bestStreak = Math.max(bestStreak, cur); }
         else cur = 0;
-      } else { botAccSum += c.acc; botAccN++; }
+      } else { botAccSum += c.acc; botAccN++; botCplSum += c.cpLoss; }
     });
     const acc = accN ? accSum / accN : 0;
     const botAcc = botAccN ? botAccSum / botAccN : 0;
@@ -349,6 +361,21 @@ export const reviewMode = {
     $("review-counts").innerHTML = Object.entries(counts)
       .filter(([, v]) => v > 0)
       .map(([k, v]) => `<div class="${k}"><span class="cls-badge ${k}">${CLS_LABEL[k]}</span> ${v}</div>`).join("");
+
+    // performance-rating estimate from average centipawn loss
+    const perfEl = $("review-perf");
+    const perf = perfElo(cplSum, accN);
+    if (perf !== null) {
+      const vsOwn = perf - state().gameElo;
+      const note = vsOwn >= 100 ? ` <span class="up-text">— above your ${state().gameElo} rating!</span>`
+        : vsOwn <= -150 ? " — rough one, the next game evens it out" : "";
+      const botPerf = perfElo(botCplSum, botAccN);
+      perfEl.hidden = false;
+      perfEl.innerHTML = `<span>🎯 You played like <b>~${perf}</b>${note}</span>` +
+        (botPerf !== null ? `<span class="muted">${g.botName}: ~${botPerf}</span>` : "");
+    } else {
+      perfEl.hidden = true;
+    }
 
     this.summaryText = gameSummary({
       result: g.result === 1 ? "win" : g.result === 0 ? "loss" : "draw",
