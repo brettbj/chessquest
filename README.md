@@ -28,7 +28,16 @@ Built as an offline-capable PWA: one codebase, installs like a native app on
   achievements, confetti, and a full set of synthesized sound effects (moves,
   captures, checks, victory fanfares, level-ups — no audio files, pure WebAudio).
 
-## Run it (Mac)
+## Play it now
+
+**→ https://brettbj.github.io/chessquest/**
+
+On iPhone: open that link in Safari → Share → **Add to Home Screen**. It installs
+with its own icon and from then on runs entirely on the device — fully offline,
+no computer or server needed. Same flow works on Mac Safari (File → Add to Dock)
+or just play in any browser.
+
+## Run it locally (Mac)
 
 ```bash
 npm start          # → http://localhost:8080
@@ -36,7 +45,7 @@ npm start          # → http://localhost:8080
 
 Any static file server works — there is no build step and no runtime dependency.
 
-## Put it on your iPhone
+## Alternative hosting
 
 The app needs HTTPS (or localhost) for full PWA install. Easiest options:
 
