@@ -334,26 +334,60 @@ export class Board {
       const srcEl = this.squares[this.dragStart.sq];
       const img = srcEl.querySelector(".piece");
       if (!img) return;
+      const rect = srcEl.getBoundingClientRect();
       this.ghost = img.cloneNode();
       this.ghost.className = "drag-ghost";
-      const size = srcEl.getBoundingClientRect().width;
-      this.ghost.style.width = size + "px";
+      this.ghostSize = rect.width;
+      // on touch, lift the piece above the finger so the thumb never hides it,
+      // and enlarge it a bit more for visibility
+      this.touchDrag = e.pointerType === "touch";
+      this.ghostScale = this.touchDrag ? 1.35 : 1.15;
+      this.ghost.style.width = rect.width + "px";
+      this.ghost.style.left = "0";
+      this.ghost.style.top = "0";
+      this.ghost.style.transition = "none";
+      // spawn exactly where the piece sits — no jump on pickup
+      this.dragPos = { x: rect.left, y: rect.top };
+      this.dragTarget = { ...this.dragPos };
+      this.ghost.style.transform =
+        `translate3d(${this.dragPos.x}px, ${this.dragPos.y}px, 0) scale(${this.ghostScale})`;
       document.body.appendChild(this.ghost);
       srcEl.classList.add("ghosted-src");
       img.classList.add("ghosted");
+      this.startGhostLoop();
     }
     if (this.ghost) {
-      const size = parseFloat(this.ghost.style.width);
-      this.ghost.style.left = e.clientX - size / 2 + "px";
-      this.ghost.style.top = e.clientY - size / 2 + "px";
-      // hover highlight on target square
-      const over = this.sqFromEvent(e);
+      const size = this.ghostSize;
+      const lift = this.touchDrag ? size * 0.55 : 0;
+      this.dragTarget = { x: e.clientX - size / 2, y: e.clientY - size / 2 - lift };
+      // hover highlight follows the visual piece position
+      const over = this.sqFromPoint(e.clientX, e.clientY - lift);
       if (over !== this.hoverSq) {
         if (this.hoverSq) this.squares[this.hoverSq]?.classList.remove("drop-hover");
         this.hoverSq = over;
         if (over) this.squares[over]?.classList.add("drop-hover");
       }
     }
+  }
+
+  // GPU-composited follow loop: light lerp smooths out pointer-event jitter
+  // without adding perceptible lag.
+  startGhostLoop() {
+    const step = () => {
+      if (!this.ghost) return;
+      this.dragPos.x += (this.dragTarget.x - this.dragPos.x) * 0.6;
+      this.dragPos.y += (this.dragTarget.y - this.dragPos.y) * 0.6;
+      this.ghost.style.transform =
+        `translate3d(${this.dragPos.x}px, ${this.dragPos.y}px, 0) scale(${this.ghostScale})`;
+      this._ghostRaf = requestAnimationFrame(step);
+    };
+    this._ghostRaf = requestAnimationFrame(step);
+  }
+
+  sqFromPoint(x, y) {
+    const el = document.elementFromPoint(x, y);
+    const sq = el && el.closest(".sq");
+    return sq ? sq.dataset.sq : null;
   }
 
   onUp(e) {
@@ -366,7 +400,8 @@ export class Board {
     }
     if (!this.dragStart || e.pointerId !== this.dragStart.id) return;
     const from = this.dragStart.sq;
-    const dropped = this.sqFromEvent(e);
+    const lift = this.ghost && this.touchDrag ? this.ghostSize * 0.55 : 0;
+    const dropped = this.sqFromPoint(e.clientX, e.clientY - lift);
     const wasDrag = !!this.ghost;
     this.endDrag();
     if (wasDrag && dropped && dropped !== from) {
@@ -378,6 +413,7 @@ export class Board {
   }
 
   endDrag() {
+    if (this._ghostRaf) { cancelAnimationFrame(this._ghostRaf); this._ghostRaf = null; }
     if (this.ghost) { this.ghost.remove(); this.ghost = null; }
     if (this.hoverSq) { this.squares[this.hoverSq]?.classList.remove("drop-hover"); this.hoverSq = null; }
     document.querySelectorAll(".ghosted").forEach((el) => el.classList.remove("ghosted"));
@@ -418,6 +454,7 @@ export class Board {
   // Update all decorations after a position change.
   // opts: {captured: bool, animate: bool} — animate slides the piece (skipped for drags).
   sync(lastFrom, lastTo, opts = {}) {
+    const wasDrag = this.pendingDrag;
     const finish = () => {
       if (lastFrom !== undefined) this.setLastMove(lastFrom, lastTo);
       this.setCheck();
@@ -426,6 +463,13 @@ export class Board {
       this.clearArrows("best");
       this.render();
       if (opts.captured && lastTo) this.burst(lastTo);
+      if (wasDrag && lastTo) {
+        const landed = this.squares[lastTo]?.querySelector(".piece");
+        if (landed) {
+          landed.classList.add("piece-land");
+          setTimeout(() => landed.classList.remove("piece-land"), 260);
+        }
+      }
     };
     const wantAnim = opts.animate !== false && !this.pendingDrag && lastFrom && lastTo;
     this.pendingDrag = false;
