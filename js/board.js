@@ -292,6 +292,19 @@ export class Board {
     return sq ? sq.dataset.sq : null;
   }
 
+  // Dropping/clicking the king onto its own rook means "castle" — the gesture
+  // players actually use. Maps the rook square to the castling destination
+  // when that castle is legal; otherwise returns the square unchanged.
+  castleTarget(from, to) {
+    if (!this.game || !from || !to) return to;
+    const king = this.game.get(from), rook = this.game.get(to);
+    if (!king || king.type !== "k" || !rook || rook.type !== "r" || king.color !== rook.color) return to;
+    const dest = (to.charCodeAt(0) > from.charCodeAt(0) ? "g" : "c") + from[1];
+    const legal = this.game.moves({ square: from, verbose: true })
+      .some((m) => m.to === dest && (m.flags.includes("k") || m.flags.includes("q")));
+    return legal ? dest : to;
+  }
+
   onDown(e) {
     // right button: start drawing an arrow
     if (e.button === 2) {
@@ -307,11 +320,12 @@ export class Board {
     const myTurn = this.game.turn();
 
     if (this.sel && this.sel !== sqName) {
+      const target = this.castleTarget(this.sel, sqName);
       const legal = this.game.moves({ square: this.sel, verbose: true })
-        .some((m) => m.to === sqName);
+        .some((m) => m.to === target);
       if (legal) {
         e.preventDefault();
-        this.tryMove(this.sel, sqName);
+        this.tryMove(this.sel, target);
         return;
       }
     }
@@ -401,10 +415,11 @@ export class Board {
     if (!this.dragStart || e.pointerId !== this.dragStart.id) return;
     const from = this.dragStart.sq;
     const lift = this.ghost && this.touchDrag ? this.ghostSize * 0.55 : 0;
-    const dropped = this.sqFromPoint(e.clientX, e.clientY - lift);
+    let dropped = this.sqFromPoint(e.clientX, e.clientY - lift);
     const wasDrag = !!this.ghost;
     this.endDrag();
     if (wasDrag && dropped && dropped !== from) {
+      dropped = this.castleTarget(from, dropped);
       const legal = this.game.moves({ square: from, verbose: true })
         .some((m) => m.to === dropped);
       if (legal) this.tryMove(from, dropped, true);

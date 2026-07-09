@@ -162,6 +162,7 @@ export const playMode = {
   // ---- game lifecycle ---------------------------------------------------------
 
   startGame(botId, color, opts = {}) {
+    this.pendingId++; // invalidate any in-flight engine reply from a previous game
     this.bot = opts.bot || this.botById(botId);
     if (this.bot.adaptive) {
       const idx = (+localStorage.getItem("cq_nova_style") || 0) % NOVA_STYLES.length;
@@ -339,6 +340,7 @@ export const playMode = {
 
   onBotMove(m) {
     const apply = () => {
+      if (m.id !== this.pendingId) return; // a new game started while this reply waited
       $("game-bot-thinking").hidden = true;
       this.botThinking = false;
       if (this.gameOver || !m.uci) return;

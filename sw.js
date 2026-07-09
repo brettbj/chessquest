@@ -1,5 +1,5 @@
 // ChessQuest service worker — cache-first for full offline play.
-const VERSION = "cq-v6";
+const VERSION = "cq-v7";
 const ASSETS = [
   "./", "./index.html", "./manifest.webmanifest", "./css/style.css",
   "./js/app.js", "./js/state.js", "./js/sounds.js", "./js/board.js",
