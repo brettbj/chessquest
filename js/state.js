@@ -81,6 +81,7 @@ function load() {
 }
 
 export function save() {
+  S.savedAt = new Date().toISOString(); // cross-device sync compares this
   localStorage.setItem(KEY, JSON.stringify(S));
 }
 

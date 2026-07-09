@@ -391,6 +391,20 @@
           <button class="btn" id="btn-import-save">⬆️ Import save</button>
           <input type="file" id="import-file" accept=".json" hidden>
         </div>
+      </div>
+      <div class="setting-group"><h4>Cloud sync</h4>
+        <p class="muted sync-help">Sync progress across devices via a private GitHub Gist.
+          Create a token at <b>github.com → Settings → Developer settings → Personal access
+          tokens (classic)</b> with only the <b>gist</b> scope, then paste it here on each device.</p>
+        <div id="sync-connect-row" class="setting-row">
+          <input type="password" id="sync-token" placeholder="GitHub token (ghp_…)" autocomplete="off">
+          <button class="btn primary" id="btn-sync-connect">Connect</button>
+        </div>
+        <div id="sync-connected-row" class="setting-row" hidden>
+          <span id="sync-status" class="muted">Connected</span>
+          <button class="btn" id="btn-sync-now">🔄 Sync now</button>
+          <button class="btn" id="btn-sync-disconnect">Disconnect</button>
+        </div>
         <div class="setting-row"><button class="btn danger" id="btn-reset">🗑 Reset all progress</button></div>
       </div>
     </div>

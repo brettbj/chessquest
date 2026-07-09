@@ -81,7 +81,14 @@ tools/                data pipeline scripts (regenerate data/*)
 tests/smoke.mjs       headless test suite (`npm test`)
 ```
 
-Progress is stored in `localStorage` on the device.
+Progress autosaves on-device after every action (no save button), with
+`navigator.storage.persist()` requested so the browser treats it as durable.
+
+**Cross-device sync**: Settings → Cloud sync. Create a GitHub personal access
+token (classic) with only the `gist` scope, paste it on each device — progress
+then syncs automatically through a private Gist (pushed 45s after changes and
+whenever the app is backgrounded; each device offers to load newer cloud
+progress at launch). Manual Export/Import save files remain as a fallback.
 
 ## Data & licenses
 

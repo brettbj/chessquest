@@ -1,11 +1,11 @@
 // ChessQuest service worker — cache-first for full offline play.
-const VERSION = "cq-v3";
+const VERSION = "cq-v4";
 const ASSETS = [
   "./", "./index.html", "./manifest.webmanifest", "./css/style.css",
   "./js/app.js", "./js/state.js", "./js/sounds.js", "./js/board.js",
   "./js/puzzles.js", "./js/bots.js", "./js/trainer.js", "./js/review.js",
   "./js/feedback.js", "./js/engine.js", "./js/engine-worker.js",
-  "./js/vendor/chess.esm.js", "./data/puzzles.js", "./data/openings.js",
+  "./js/vendor/chess.esm.js", "./js/sync.js", "./data/puzzles.js", "./data/openings.js",
   "./data/content.js", "./data/drills.js",
   "./assets/icon-192.png", "./assets/icon-512.png", "./assets/icon-180.png",
   ...["k", "q", "r", "b", "n", "p"].flatMap((p) => [`./assets/pieces/${p}l.svg`, `./assets/pieces/${p}d.svg`]),

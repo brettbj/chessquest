@@ -11,6 +11,8 @@ import { playMode } from "./bots.js";
 import { trainerMode, MODULES } from "./trainer.js";
 import { reviewMode } from "./review.js";
 import { TIPS, WISDOM, MATE_PATTERNS } from "../data/content.js";
+import { connect as syncConnect, disconnect as syncDisconnect, pushSave, checkRemote,
+         applyRemote, describeRemote, startAutoSync, syncStatus, onSyncStatus } from "./sync.js";
 
 const $ = (id) => document.getElementById(id);
 const today = () => new Date().toISOString().slice(0, 10);
@@ -274,6 +276,7 @@ $("tip-ticker").addEventListener("click", rotateTip);
 const AVATARS = ["🦉", "🦊", "🐺", "🦁", "🐸", "🐙", "🦄", "🐲", "👑", "🥷", "🧙", "🤖", "😈", "🐴", "☕", "⚡"];
 
 function openSettings() {
+  renderSyncRows();
   const s = state();
   for (const k of ["boardTheme", "soundPack", "tonePack", "reviewDepth"]) $("set-" + k).value = s.settings[k];
   $("set-volume").value = s.settings.volume;
@@ -338,6 +341,57 @@ $("import-file").addEventListener("change", async (e) => {
     toast("❌ That file isn't a ChessQuest save. " + err.message, "bad");
   }
 });
+// ---- cloud sync (private GitHub Gist) ----
+function renderSyncRows() {
+  const st = syncStatus();
+  $("sync-connect-row").hidden = st.connected;
+  $("sync-connected-row").hidden = !st.connected;
+  if (st.connected) {
+    const when = st.lastSync ? new Date(st.lastSync).toLocaleString() : "not yet";
+    $("sync-status").textContent = st.busy ? "Syncing…" : st.error ? "⚠️ " + st.error : "✅ Synced: " + when;
+  }
+}
+onSyncStatus(renderSyncRows);
+
+$("btn-sync-connect").addEventListener("click", async () => {
+  const tok = $("sync-token").value.trim();
+  if (!tok) { toast("Paste a GitHub token first."); return; }
+  $("btn-sync-connect").disabled = true;
+  try {
+    const login = await syncConnect(tok);
+    $("sync-token").value = "";
+    renderSyncRows();
+    toast(`☁️ Connected as ${login} — checking for newer progress…`, "ach");
+    const remote = await checkRemote();
+    if (remote && confirm(`Found progress in the cloud:\n${describeRemote(remote)}\n\nLoad it on this device? (Your current local progress will be replaced.)`)) {
+      applyRemote(remote);
+      setTimeout(() => location.reload(), 400);
+    } else {
+      await pushSave();
+    }
+  } catch (e) {
+    toast("❌ " + e.message, "bad");
+  } finally {
+    $("btn-sync-connect").disabled = false;
+    renderSyncRows();
+  }
+});
+$("btn-sync-now").addEventListener("click", async () => {
+  sfx.click();
+  const remote = await checkRemote();
+  if (remote && confirm(`The cloud copy is newer:\n${describeRemote(remote)}\n\nLoad it? (Cancel pushes this device's progress up instead.)`)) {
+    applyRemote(remote);
+    setTimeout(() => location.reload(), 400);
+    return;
+  }
+  toast((await pushSave()) ? "☁️ Progress synced." : "❌ Sync failed — check your connection.");
+});
+$("btn-sync-disconnect").addEventListener("click", () => {
+  syncDisconnect();
+  renderSyncRows();
+  toast("Cloud sync disconnected. Your local progress is untouched.");
+});
+
 $("btn-reset").addEventListener("click", () => {
   if (confirm("Reset ALL progress? This cannot be undone. Export a save first if unsure.")) {
     localStorage.clear();
@@ -516,6 +570,18 @@ renderHome();
 // a restored mid-game should greet the player, not hide behind the home tab
 if (playMode.chess && !playMode.gameOver) goto("play");
 maybeOnboard();
+
+// ---- durable storage + cloud sync boot ----
+if (navigator.storage && navigator.storage.persist) {
+  navigator.storage.persist().catch(() => {});
+}
+startAutoSync();
+checkRemote().then((remote) => {
+  if (remote && confirm(`☁️ Newer progress found from another device:\n${describeRemote(remote)}\n\nLoad it here?`)) {
+    applyRemote(remote);
+    location.reload();
+  }
+}).catch(() => {});
 save();
 
 // debug/test handle
