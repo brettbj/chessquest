@@ -2371,3 +2371,8 @@ kbd {
 
 /* keep the [hidden] guarantee absolute over every display rule above */
 [hidden] { display: none !important; }
+
+/* --- stable review nav: nothing may move underneath the user's finger --- */
+.key-moments { min-height: 38px; }
+#btn-review-pv { min-width: 86px; }
+.review-nav .btn:disabled { opacity: 0.35; }

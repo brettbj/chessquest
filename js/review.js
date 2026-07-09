@@ -140,7 +140,6 @@ export const reviewMode = {
     this.board.setOrientation(g.playerColor);   // reset any flip from last session
 
     // reset feature UI until analysis lands
-    $("key-moments").hidden = true;
     $("key-moments").innerHTML = "";
     $("acc-spark").hidden = true;
     $("phase-breakdown").innerHTML = "";
@@ -374,8 +373,8 @@ export const reviewMode = {
     });
     items.sort((a, b) => PRI[a.cls] - PRI[b.cls] || a.i - b.i);
     const top = items.slice(0, 8).sort((a, b) => a.i - b.i);
-    if (top.length === 0) { host.hidden = true; host.innerHTML = ""; return; }
-    host.hidden = false;
+    host.hidden = false; // reserved space — an appearing bar must not shift the nav row
+    if (top.length === 0) { host.innerHTML = ""; return; }
     host.innerHTML = top.map(({ i, cls }) =>
       `<button class="km-btn ${cls}" data-ply="${i + 1}">${CLS_ICON[cls] || "•"} ${moveNoStr(i)}${this.moveMeta[i].san}</button>`
     ).join("");
@@ -505,12 +504,12 @@ export const reviewMode = {
   updateToolButtons() {
     const prev = this.ply > 0 && this.analysis ? this.analysis[this.ply - 1] : null;
     const c = this.ply > 0 && this.classified ? this.classified[this.ply - 1] : null;
-    $("btn-review-best").hidden = !(prev && prev.bestUci && c && BAD_CLS.includes(c.cls));
+    $("btn-review-best").disabled = !(prev && prev.bestUci && c && BAD_CLS.includes(c.cls));
     const cur = this.analysis && this.analysis[this.ply];
-    $("btn-review-pv").hidden = !(cur && cur.bestUci && cur.moves && cur.moves.length > 0);
+    $("btn-review-pv").disabled = !(cur && cur.bestUci && cur.moves && cur.moves.length > 0);
     if (!this.pvActive) $("btn-review-pv").textContent = "▶️ Line";
     const stm = this.positions[this.ply].split(" ")[1];
-    $("btn-review-retry").hidden = !(this.ply >= 1 && this.retryPosition && stm === this.game.playerColor);
+    $("btn-review-retry").disabled = !(this.ply >= 1 && this.retryPosition && stm === this.game.playerColor);
   },
 
   // ---- best-move show -------------------------------------------------------------
